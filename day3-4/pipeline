@@ -1,0 +1,31 @@
+\m4_TLV_version 1d: tl-x.org
+\SV
+   m4_makerchip_module
+\TLV
+   // Makerchip TL-Verilog example: Error ORing in a pipeline
+   |comp
+      @1
+            // Error sources 
+         //$bad_input
+         //$illegal_op
+         //or
+         $err1 = $bad_input || $illegal_op;
+      @2
+            // Pass pipeline signals automatically
+      @3
+         //$overflow
+            // OR errors from stage 1 and new error
+         $err2 = $err1 || $overflow;
+      @4
+            // pipeline bubble
+      @5
+            // pipeline bubble
+      @6
+         //$div_by_zero
+            
+            // Final OR of all errors
+         $err3 = $err2 || $div_by_zero;
+
+
+\SV
+   endmodule
