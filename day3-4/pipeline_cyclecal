@@ -7,26 +7,35 @@
       @1
          $reset = *reset;
          $valid = $reset ? 32'b0 : (>>1$valid + 1 );
-         $rst[31:0] = ($valid | $reset);
-      ?$valid
+         $toggle[31:0] = ($valid | | $reset);
+      ?$toggle
          @1   
             // YOUR CODE HERE
             // ...
             $val1[31:0] = >>2$out;
             $val2[31:0] = $rand2[3:0];
-            $out[31:0] = $reset ? 32'b0 : $op[0] ? $val1[31:0]  + $val2[31:0] 
-                                             : $op[1] ? $val1[31:0] - $vel2[31:0]
-                                                     :$op[2] ? $val1[31:0] * $val2[31:0]
-                                                              : $op[3] ? $val1[31:0] / $val2[31:0]
+            $sum[31:0] = $val1[31:0] + $val2[31:0];
+            $diff[31:0] = $val1[31:0] - $val2[31:0];
+            $prod[31:0] = $val1[31:0] * $val2[31:0];
+            $quot[31:0] = $val2[31:0]==0 ? 0: $val1[31:0] / $val2[31:0];
+            $out[31:0] = $reset ? 32'b0 : $op[0] ? $sum
+                                             : $op[1] ? $diff
+                                                     :$op[2] ? $prod
+                                                              : $op[3] ? $quot
                                                                         : >>2$mem[31:0];
+                                                                        
             $mem[31:0] = $reset ? 32'b0 : $op[0] ? >>2$mem[31:0] : >>2$out;            
    
    *passed = *cyc_cnt > 200;
    *failed = 1'b0;
 \SV
    endmodule
+   
+   
 
-//https://makerchip.com/sandbox/0wpfLhO3/098hmQw
+
+
+//https://makerchip.com/sandbox/0wpfLhO3/0g5hlQA
    
    
 
