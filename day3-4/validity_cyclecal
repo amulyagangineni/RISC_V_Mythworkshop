@@ -18,8 +18,8 @@
       @1
          $reset = *reset;
          $valid = $reset ? 32'b0 : (>>1$valid + 1 );
-         $rst[31:0] = ($valid | $reset);
-      ?$valid
+         $rst = ($valid | $reset);
+      ?$rst
          @1   
             // YOUR CODE HERE
             // ...
@@ -36,6 +36,7 @@
    *failed = 1'b0;
 \SV
    endmodule
+
 
 
 
