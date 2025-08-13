@@ -33,10 +33,9 @@
          $reset = *reset;
          
          
-         $pc[31:0] = (>>1$reset) ? '0 : 
+         $pc = (>>1$reset) ? '0 : 
                      (>>3$valid_taken_br) ? >>3$br_tgt_pc : 
-                     (>>3$valid_load) ? >>3$inc_pc : 
-                     (>>3$valid_jump && >>3$is_jal) ? >>3$br_tgt_pc :
+                     (>>3$valid_load) ? >>3$inc_pc : (>>3$valid_jump && >>3$is_jal) ? >>3$br_tgt_pc :
                      (>>3$valid_jump && >>3$is_jalr) ? >>3$jalr_tgt_pc : >>1$inc_pc;
          
              //        >>3$valid_taken_br ? >>3$br_tgt_pc: >>3$inc_pc;
@@ -44,7 +43,7 @@
          
          
       
-         $imem_rd_addr[M4_IMEM_INDEX_CNT - 1:0] = $pc[M4_IMEM_INDEX_CNT + 1:2];
+         $imem_rd_addr[31:0] = $pc[M4_IMEM_INDEX_CNT + 1:2];
          
          $imem_rd_en = !$reset;
        
@@ -69,9 +68,34 @@
                       $is_u_instr ? { {{$instr[31:12]}}, 12'b0}:
                       $is_j_instr ? { {12{$instr[31]}}, $instr[19:12], $instr[20], $instr[30:21], 1'b0} :
                       32'b0;
-                      
+               
+         
+         
+         
+         
+         
+            
+         $funct7_valid = $is_r_instr;
+         ?$funct7_valid
+            $funct7[6:0] = $instr[31:25];
+         $funct3_valid = $is_b_instr || $is_s_instr || $is_i_instr || $is_r_instr;
+         ?$funct3_valid
+            $funct3[2:0] = $instr[14:12];
+         $rs1_valid = $is_b_instr || $is_s_instr || $is_i_instr || $is_r_instr;
+         ?$rs1_valid
+            $rs1[4:0] = $instr[19:15];
+         $rs2_valid = $is_b_instr || $is_s_instr || $is_r_instr;
+         ?$rs2_valid
+            $rs2[4:0] = $instr[24:20];
+         $rd_valid =  $is_u_instr || $is_j_instr || $is_i_instr || $is_r_instr;
+         ?$rd_valid
+            $rd[4:0] = $instr[11:7];
          //decode 
+         
+         $opcode[6:0] = $instr[6:0];
          $dec_bits[10:0] = { $funct7[5], $funct3, $opcode};
+         
+         
          $is_beq = $dec_bits ==? 11'bx_000_1100011;
          $is_bne = $dec_bits ==? 11'bx_001_1100011;
          $is_blt = $dec_bits ==? 11'bx_100_1100011;
@@ -115,6 +139,7 @@
          $is_and = $dec_bits ==? 11'b0_111_0110011;
          
          $is_load = $dec_bits ==? 11'bx_xxx_0000011;
+         $is_jump = $is_jal || $is_jalr;
          
          
          
@@ -127,27 +152,7 @@
          
          
       
-         
-         $opcode[6:0] = $instr[6:0];
-         
-         
             
-         $funct7_valid = $is_r_instr;
-         ?$funct7_valid
-            $funct7[6:0] = $instr[31:25];
-         $funct3_valid = $is_b_instr || $is_s_instr || $is_i_instr || $is_r_instr;
-         ?$funct3_valid
-            $funct3[2:0] = $instr[14:12];
-         $rs1_valid = $is_b_instr || $is_s_instr || $is_i_instr || $is_r_instr;
-         ?$rs1_valid
-            $rs1[4:0] = $instr[19:15];
-         $rs2_valid = $is_b_instr || $is_s_instr || $is_r_instr;
-         ?$rs2_valid
-            $rs2[4:0] = $instr[24:20];
-         $rd_valid =  $is_u_instr || $is_j_instr || $is_i_instr || $is_r_instr;
-         ?$rd_valid
-            $rd[4:0] = $instr[11:7];
-            `BOGUS_USE($rd)
             
          
          
@@ -174,12 +179,16 @@
       @3  
          //ALU
          
-         $rf_wr_en = ($rd_valid && $valid) ? $rd != 5'b0 || >>2$valid_load;
+         $rf_wr_en = ($rd_valid && $valid && $rd != 5'b0) || >>2$valid_load;
          
          ?$rf_wr_en
          
          $rf_wr_index[4:0] = !$valid ? >>2$rd[4:0] :$rd[4:0];
          $rf_wr_data[4:0] = !$valid ? >>2$ld_data[31:0] : $result[31:0];
+         
+         $sltu_result = $src1_value < $src2_value;
+         $sltiu_result = $src1_value < $imm;
+         
          
          
          $result[31:0] = $is_addi ? ($src1_value + $imm) :
@@ -233,12 +242,12 @@
       @5
          $ld_data[31:0] = $dmem_rd_data[31:0];
          
-         
+      
          //$br_tgt_pc[31:0] = $pc + $imm;
-         *passed = |cpu/xreg[10]>>1$value == (1+2+3+4+5+6+7+8+9);
+         
                            
          
-       
+         `BOGUS_USE($rd $dem_wr_data $sltiu_result $sltu_result)
            
    // Assert these to end simulation (before Makerchip cycle limit).
    // Release reset after 5 cycles
@@ -246,6 +255,7 @@
 
    // Simple simulation pass condition
    //*passed = *cyc_cnt > 40;
+   *passed = |cpu/xreg[10]>>1$value == (1+2+3+4+5+6+7+8+9);
    *failed = 1'b0;
 
    // Macro instantiations for:
